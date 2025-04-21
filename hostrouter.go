@@ -37,9 +37,11 @@ func (hr Routes) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		router.ServeHTTP(w, r)
 		return
 	}
-	if router, ok := hr[strings.ToLower(getWildcardHost(host))]; ok {
-		router.ServeHTTP(w, r)
-		return
+	for _, wildcardHost := range getWildcardHosts(host) {
+		if router, ok := hr[strings.ToLower(wildcardHost)]; ok {
+			router.ServeHTTP(w, r)
+			return
+		}
 	}
 	if router, ok := hr["*"]; ok {
 		router.ServeHTTP(w, r)
@@ -98,11 +100,18 @@ func parseForwarded(forwarded string) (addr, proto, host string) {
 	return
 }
 
-func getWildcardHost(host string) string {
+func getWildcardHosts(host string) []string {
 	parts := strings.Split(host, ".")
-	if len(parts) > 1 {
-		wildcard := append([]string{"*"}, parts[1:]...)
-		return strings.Join(wildcard, ".")
+	if len(parts) <= 1 {
+		return []string{host}
 	}
-	return strings.Join(parts, ".")
+	hosts := []string{}
+	newParts := []string{}
+	for index, part := range parts {
+		wildcard := append(newParts, "*")
+		wildcard = append(wildcard, parts[index+1:]...)
+		hosts = append(hosts, strings.Join(wildcard, "."))
+		newParts = append(newParts, part)
+	}
+	return hosts
 }
