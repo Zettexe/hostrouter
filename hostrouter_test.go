@@ -1,6 +1,9 @@
 package hostrouter
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func Test_getWildcardHost(t *testing.T) {
 	type args struct {
@@ -9,16 +12,16 @@ func Test_getWildcardHost(t *testing.T) {
 	tests := []struct {
 		name string
 		args args
-		want string
+		want []string
 	}{
-		{"no wildcard in 1-part host", args{"com"}, "com"},
-		{"wildcard in 2-part", args{"dot.com"}, "*.com"},
-		{"wildcard in 3-part", args{"amazing.dot.com"}, "*.dot.com"},
+		{"no wildcard in 1-part host", args{"com"}, []string{"com"}},
+		{"wildcard in 2-part", args{"dot.com"}, []string{"*.com", "dot.*"}},
+		{"wildcard in 3-part", args{"amazing.dot.com"}, []string{"*.dot.com", "amazing.*.com", "amazing.dot.*"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := getWildcardHost(tt.args.host); got != tt.want {
-				t.Errorf("getWildcardHost() = %v, want %v", got, tt.want)
+			if got := getWildcardHosts(tt.args.host); !slices.Equal(got, tt.want) {
+				t.Errorf("getWildcardHosts() = %v, want %v", got, tt.want)
 			}
 		})
 	}
